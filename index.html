@@ -124,6 +124,29 @@
   .paycard .kv:last-child{border-bottom:0}
   .paycard .kv .k{min-width:0;word-break:break-word}
   .paycard .kv .v{font-family:'Share Tech Mono',monospace;color:var(--grn-3);white-space:nowrap;text-align:right}
+  .paycard h3 .org{color:#fff;font-weight:700}
+  /* 犯罪ファイル(犯罪補足) */
+  .dossier{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding-bottom:10px;align-items:start}
+  .dcard{border:1px solid var(--line);border-left:3px solid var(--grn);background:var(--panel);padding:14px 15px}
+  .dhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .dname{font-weight:900;font-size:16px}
+  .cbadge{font-family:'Share Tech Mono',monospace;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border:1px solid var(--line-2);white-space:nowrap}
+  .cat-s{color:var(--grn-3);border-color:var(--grn);background:rgba(46,139,87,.14)}
+  .cat-m{color:#f2cf6b;border-color:#8a701f;background:rgba(232,197,90,.12)}
+  .cat-l{color:#ff9bb0;border-color:#8a2f45;background:rgba(219,112,147,.14)}
+  .cat-x{color:var(--fg-dim)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+  .st{display:flex;flex-direction:column;gap:3px;background:var(--panel);padding:8px 11px}
+  .st .sl{font-family:'Share Tech Mono',monospace;font-size:9.5px;letter-spacing:.05em;color:var(--muted)}
+  .st .sv{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--grn-3);font-variant-numeric:tabular-nums}
+  /* 禁止車両 */
+  .vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;padding-bottom:10px}
+  .vcard{display:flex;align-items:center;gap:11px;border:1px solid var(--line);background:var(--panel);padding:11px 13px}
+  .vcard:hover{border-color:var(--line-2)}
+  .vno{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--grn-2);opacity:.7}
+  .vnm{flex:1 1 auto;min-width:0;font-weight:700;font-size:14px;word-break:break-word}
+  .vlink{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--grn-2);border:1px solid var(--line-2);padding:4px 9px;white-space:nowrap}
+  .vlink:hover{color:#fff;border-color:var(--grn);background:var(--grn-dim)}
   /* モバイル: 通常テーブルを行ごとのカードに積む */
   @media (max-width:640px){
     .table-wrap{overflow:visible;border:0;background:none}
@@ -167,12 +190,12 @@
 var SHEET_ID='1KEtR26N04ygqYvYZfTm5ZdCqDsC6UhK0ysdelg6LbU0';
 var TABS=[
   {name:'全体ルール',gid:'0',type:'rules'},
-  {name:'請求金額 / 最低金額',gid:'2077565300',type:'table',layout:'pairs'},
-  {name:'犯罪補足',gid:'1673507175',type:'table'},
+  {name:'請求金額 / 最低金額',gid:'2077565300',type:'table',layout:'pricing'},
+  {name:'犯罪補足',gid:'1673507175',type:'table',layout:'crime'},
   {name:'職業ルール',gid:'1979250489',type:'rules'},
   {name:'PDルール',gid:'1677052079',type:'rules'},
   {name:'犯罪者ルール',gid:'242915000',type:'rules'},
-  {name:'犯罪禁止車両',gid:'630226675',type:'table'},
+  {name:'犯罪禁止車両',gid:'630226675',type:'table',layout:'vehicles'},
   {name:'EMSルール',gid:'1446749513',type:'rules'},
   {name:'闇医者ルール',gid:'458515120',type:'rules'},
   {name:'メカニックルール',gid:'1082808880',type:'rules'},
@@ -195,6 +218,38 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function linkify(s){return s.replace(/(https?:\/\/[^\s）】」<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');}
 function isUrl(s){return /^https?:\/\//.test(String(s||'').trim());}
 function isNum(s){s=String(s||'').trim();return s!=='' && /^[0-9,.\-\/%]+$/.test(s);}
+function findCol(h,kw){for(var j=0;j<h.length;j++){if(String(h[j]||'').replace(/\s/g,'').indexOf(kw)!==-1)return j;}return -1;}
+function catClass(c){c=String(c||'');if(c.indexOf('大型')!==-1)return 'cat-l';if(c.indexOf('中型')!==-1)return 'cat-m';if(c.indexOf('個')!==-1)return 'cat-s';return 'cat-x';}
+function renderPricing(rows,q){var header=rows[0]||[];var field=['請求内容','アイテム','請求金額','最低金額','内容'];var cards=[];
+  for(var c=1;c<header.length;c+=2){var lh=(header[c]||'').trim();var vh=(header[c+1]||'').trim();if(!lh&&!vh)continue;
+    var parts=lh.split(/\s+/);var title=(parts.length>1&&field.indexOf(parts[parts.length-1])!==-1)?parts.slice(0,-1).join(' '):lh;
+    var items=[];for(var r=1;r<rows.length;r++){var k=((rows[r]||[])[c]||'').trim();var v=((rows[r]||[])[c+1]||'').trim();if(!k&&!v)continue;if(q&&(k+' '+v+' '+lh).toLowerCase().indexOf(q)===-1)continue;items.push({k:k,v:v});}
+    if(items.length)cards.push({title:title||lh,unit:vh,items:items});}
+  var n=0,h='<div class="paygrid">';cards.forEach(function(cd){h+='<div class="paycard"><h3><span class="org">'+esc(cd.title)+'</span>'+(cd.unit?'<span>'+esc(cd.unit)+'</span>':'')+'</h3>';cd.items.forEach(function(it){h+='<div class="kv"><span class="k">'+hl(it.k,view.q)+'</span><span class="v">'+(it.v?hl(it.v,view.q):'—')+'</span></div>';n++;});h+='</div>';});h+='</div>';return {h:h,n:n};}
+function renderCrime(rows,q){var header=rows[0]||[];
+  var ci={name:findCol(header,'犯罪'),cat:findCol(header,'カテゴリ'),pd:findCol(header,'最大対応'),cmax:findCol(header,'最大人数'),cmin:findCol(header,'最低人数'),need:findCol(header,'必要'),hide:findCol(header,'逃げ込み'),bug:findCol(header,'耐久')};
+  if(ci.name<0){for(var j=0;j<header.length;j++){var hx=(header[j]||'').trim();if(hx&&hx!=='目次'){ci.name=j;break;}}}
+  var n=0,h='<div class="dossier">';
+  for(var r=1;r<rows.length;r++){var row=rows[r]||[];var name=(row[ci.name]||'').trim();if(!name)continue;if(q&&row.join(' ').toLowerCase().indexOf(q)===-1)continue;
+    var cat=ci.cat>=0?(row[ci.cat]||'').trim():'';var chips='';
+    var add=function(l,v){v=String(v||'').trim();if(v)chips+='<div class="st"><span class="sl">'+l+'</span><span class="sv">'+esc(v)+'</span></div>';};
+    if(ci.pd>=0)add('PD対応',row[ci.pd]);
+    if(ci.cmax>=0||ci.cmin>=0){var mx=ci.cmax>=0?(row[ci.cmax]||'').trim():'';var mn=ci.cmin>=0?(row[ci.cmin]||'').trim():'';var val=(mn&&mx)?(mn+'〜'+mx):(mx||mn);add('犯罪者',val?(val+' 人'):'');}
+    if(ci.need>=0)add('必要PD',row[ci.need]);
+    if(ci.hide>=0)add('逃げ込み禁止',row[ci.hide]);
+    if(ci.bug>=0)add('バグ耐久',row[ci.bug]);
+    h+='<div class="dcard"><div class="dhead"><span class="dname">'+hl(name,view.q)+'</span>'+(cat?'<span class="cbadge '+catClass(cat)+'">'+esc(cat)+'</span>':'')+'</div>'+(chips?'<div class="stats">'+chips+'</div>':'')+'</div>';n++;}
+  h+='</div>';return {h:h,n:n};}
+function renderVehicles(rows,q){var header=rows[0]||[];var nameC=findCol(header,'名前');var urlC=findCol(header,'URL');if(nameC<0)nameC=0;if(urlC<0)urlC=1;
+  var n=0,h='<div class="vgrid">';for(var r=1;r<rows.length;r++){var row=rows[r]||[];var nm=(row[nameC]||'').trim();if(!nm)continue;if(q&&row.join(' ').toLowerCase().indexOf(q)===-1)continue;var url=(row[urlC]||'').trim();
+    h+='<div class="vcard"><span class="vno">'+('0'+(n+1)).slice(-2)+'</span><span class="vnm">'+hl(nm,view.q)+'</span>'+(isUrl(url)?'<a class="vlink" href="'+esc(url)+'" target="_blank" rel="noopener">詳細 ↗</a>':'')+'</div>';n++;}
+  h+='</div>';return {h:h,n:n};}
+function renderGrid(rows,q){var hd=rows[0]||[];var vis=[];
+  for(var j=0;j<hd.length;j++){var h0=(hd[j]||'').trim();if(h0==='目次')continue;var any=h0!=='';if(!any){for(var rk=1;rk<rows.length;rk++){if(String((rows[rk]||[])[j]||'').trim()!==''){any=true;break;}}}if(any)vis.push(j);}
+  var hh='<div class="table-wrap"><table><thead><tr>'+vis.map(function(j){return '<th>'+esc(hd[j]||'')+'</th>';}).join('')+'</tr></thead><tbody>';var n=0;
+  for(var r2=1;r2<rows.length;r2++){var row2=rows[r2]||[];if(vis.map(function(j){return String(row2[j]||'');}).join('').trim()==='')continue;if(q&&vis.map(function(j){return String(row2[j]||'');}).join(' ').toLowerCase().indexOf(q)===-1)continue;
+    hh+='<tr>'+vis.map(function(j){var c=row2[j]||'';var lab=esc(hd[j]||'').replace(/"/g,'&quot;');if(isUrl(c))return '<td data-label="'+lab+'">'+linkify(esc(c))+'</td>';return '<td data-label="'+lab+'"'+(isNum(c)?' class="num"':'')+'>'+hl(c||'',view.q)+'</td>';}).join('')+'</tr>';n++;}
+  hh+='</tbody></table></div>';return {h:hh,n:n};}
 function hl(text,q){var e=esc(text);if(!q)return e;try{var re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');return e.replace(re,'<mark>$1</mark>');}catch(x){return e;}}
 
 /* CSV パーサ(RFC4180) */
@@ -284,38 +339,13 @@ function renderTbody(){
       if(cat&&cat!==lastCat){h+='<div class="sect mono">'+esc(cat)+'</div>';lastCat=cat;}
       h+='<div class="rule" id="r-'+view.tab+'-'+r+'"><span class="no'+(no?'':' blank')+'">'+(no?esc(no):'—')+'</span><div class="body">'+linkify(hl(tx,view.q))+'</div></div>';shown++;}
     h+='</div>';body.innerHTML=h;
-  }else if(t.layout==='pairs'){
-    var header=rows[0]||[];var cards=[];
-    for(var c=1;c<header.length;c+=2){
-      var lh=(header[c]||'').trim();var vh=(header[c+1]||'').trim();
-      if(!lh&&!vh)continue;
-      var items=[];
-      for(var r=1;r<rows.length;r++){var k=((rows[r]||[])[c]||'').trim();var v=((rows[r]||[])[c+1]||'').trim();
-        if(!k&&!v)continue;
-        if(q&&(k+' '+v+' '+lh+' '+vh).toLowerCase().indexOf(q)===-1)continue;
-        items.push({k:k,v:v});}
-      if(items.length)cards.push({title:lh||vh,unit:vh,items:items});
-    }
-    var ph='<div class="paygrid">';
-    cards.forEach(function(cd){
-      ph+='<div class="paycard"><h3>'+esc(cd.title)+(cd.unit&&cd.unit!==cd.title?' <span>'+esc(cd.unit)+'</span>':'')+'</h3>';
-      cd.items.forEach(function(it){ph+='<div class="kv"><span class="k">'+hl(it.k,view.q)+'</span><span class="v">'+(it.v?hl(it.v,view.q):'—')+'</span></div>';});
-      ph+='</div>';shown+=cd.items.length;
-    });
-    ph+='</div>';body.innerHTML=ph;
   }else{
-    var hd=rows[0]||[];var vis=[];
-    for(var j=0;j<hd.length;j++){var h0=(hd[j]||'').trim();if(h0==='目次')continue;var any=h0!=='';
-      if(!any){for(var rr=1;rr<rows.length;rr++){if(String((rows[rr]||[])[j]||'').trim()!==''){any=true;break;}}}
-      if(any)vis.push(j);}
-    var hh='<div class="table-wrap"><table><thead><tr>'+vis.map(function(j){return '<th>'+esc(hd[j]||'')+'</th>';}).join('')+'</tr></thead><tbody>';
-    for(var r2=1;r2<rows.length;r2++){var row2=rows[r2]||[];
-      if(vis.map(function(j){return String(row2[j]||'');}).join('').trim()==='')continue;
-      if(q&&vis.map(function(j){return String(row2[j]||'');}).join(' ').toLowerCase().indexOf(q)===-1)continue;
-      hh+='<tr>'+vis.map(function(j){var c=row2[j]||'';var lab=esc(hd[j]||'').replace(/"/g,'&quot;');
-        if(isUrl(c))return '<td data-label="'+lab+'">'+linkify(esc(c))+'</td>';
-        return '<td data-label="'+lab+'"'+(isNum(c)?' class="num"':'')+'>'+hl(c||'',view.q)+'</td>';}).join('')+'</tr>';shown++;}
-    hh+='</tbody></table></div>';body.innerHTML=hh;
+    var out;
+    if(t.layout==='pricing')out=renderPricing(rows,q);
+    else if(t.layout==='crime')out=renderCrime(rows,q);
+    else if(t.layout==='vehicles')out=renderVehicles(rows,q);
+    else out=renderGrid(rows,q);
+    body.innerHTML=out.h;shown=out.n;
   }
   if(shown===0)body.innerHTML='<div class="state">'+(view.q?'「'+esc(view.q)+'」に一致する項目はありません':'項目がありません')+'</div>';
 }
