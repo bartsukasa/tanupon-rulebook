@@ -109,10 +109,35 @@
   .sect::before{content:"//";color:var(--grn)}
   .table-wrap{overflow-x:auto;border:1px solid var(--line);background:var(--panel)}
   table{border-collapse:collapse;width:100%;font-size:13px}
-  thead th{background:var(--panel-2);color:var(--grn-2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-2);white-space:pre-wrap;vertical-align:bottom;font-weight:700;font-family:'Share Tech Mono',monospace;font-size:11.5px;letter-spacing:.04em;position:sticky;top:0}
-  tbody td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:pre-wrap}
+  thead th{background:var(--panel-2);color:var(--grn-2);text-align:left;padding:11px 13px;border-bottom:1px solid var(--line-2);white-space:pre-wrap;vertical-align:bottom;font-weight:700;font-family:'Share Tech Mono',monospace;font-size:11.5px;letter-spacing:.04em;position:sticky;top:0}
+  tbody td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;white-space:pre-wrap}
+  tbody tr:nth-child(2n){background:rgba(255,255,255,.018)}
   tbody tr:hover{background:var(--panel-2)}
-  td.num{font-family:'Share Tech Mono',monospace;font-variant-numeric:tabular-nums}
+  tbody td:first-child{color:#fff;font-weight:700}
+  td.num{font-family:'Share Tech Mono',monospace;font-variant-numeric:tabular-nums;color:var(--grn-3)}
+  /* 請求金額など: グループ別の2列リスト(カード) */
+  .paygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:13px;padding-bottom:10px;align-items:start}
+  .paycard{border:1px solid var(--line);background:var(--panel)}
+  .paycard h3{margin:0;font-size:12px;font-family:'Share Tech Mono',monospace;letter-spacing:.06em;color:var(--grn-2);padding:11px 14px;border-bottom:1px solid var(--line-2);background:var(--panel-2);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .paycard h3 span{color:var(--muted);font-size:10px;font-weight:400}
+  .paycard .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .paycard .kv:last-child{border-bottom:0}
+  .paycard .kv .k{min-width:0;word-break:break-word}
+  .paycard .kv .v{font-family:'Share Tech Mono',monospace;color:var(--grn-3);white-space:nowrap;text-align:right}
+  /* モバイル: 通常テーブルを行ごとのカードに積む */
+  @media (max-width:640px){
+    .table-wrap{overflow:visible;border:0;background:none}
+    table,thead,tbody,tr,td{display:block;width:100%}
+    thead{display:none}
+    tbody tr{border:1px solid var(--line);background:var(--panel);margin-bottom:10px}
+    tbody tr:nth-child(2n){background:var(--panel)}
+    tbody td{display:flex;justify-content:space-between;gap:14px;border:0;border-bottom:1px solid var(--line);padding:10px 14px;text-align:right}
+    tbody td:last-child{border-bottom:0}
+    tbody td:empty{display:none}
+    tbody td::before{content:attr(data-label);color:var(--grn-2);font-family:'Share Tech Mono',monospace;font-size:10.5px;letter-spacing:.03em;text-align:left;flex:0 0 42%;white-space:pre-wrap}
+    tbody td:first-child{background:var(--panel-2);font-size:14.5px}
+    tbody td:first-child::before{color:var(--muted)}
+  }
   .state{color:var(--muted);font-size:13px;padding:50px 4px;text-align:center}
   .state.err{color:#f0a0a0}
   .state .retry{display:inline-block;margin-top:14px;background:var(--grn-dim);border:1px solid var(--grn);color:#eafff3;padding:8px 16px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:12px}
@@ -142,7 +167,7 @@
 var SHEET_ID='1KEtR26N04ygqYvYZfTm5ZdCqDsC6UhK0ysdelg6LbU0';
 var TABS=[
   {name:'全体ルール',gid:'0',type:'rules'},
-  {name:'請求金額 / 最低金額',gid:'2077565300',type:'table'},
+  {name:'請求金額 / 最低金額',gid:'2077565300',type:'table',layout:'pairs'},
   {name:'犯罪補足',gid:'1673507175',type:'table'},
   {name:'職業ルール',gid:'1979250489',type:'rules'},
   {name:'PDルール',gid:'1677052079',type:'rules'},
@@ -259,10 +284,37 @@ function renderTbody(){
       if(cat&&cat!==lastCat){h+='<div class="sect mono">'+esc(cat)+'</div>';lastCat=cat;}
       h+='<div class="rule" id="r-'+view.tab+'-'+r+'"><span class="no'+(no?'':' blank')+'">'+(no?esc(no):'—')+'</span><div class="body">'+linkify(hl(tx,view.q))+'</div></div>';shown++;}
     h+='</div>';body.innerHTML=h;
+  }else if(t.layout==='pairs'){
+    var header=rows[0]||[];var cards=[];
+    for(var c=1;c<header.length;c+=2){
+      var lh=(header[c]||'').trim();var vh=(header[c+1]||'').trim();
+      if(!lh&&!vh)continue;
+      var items=[];
+      for(var r=1;r<rows.length;r++){var k=((rows[r]||[])[c]||'').trim();var v=((rows[r]||[])[c+1]||'').trim();
+        if(!k&&!v)continue;
+        if(q&&(k+' '+v+' '+lh+' '+vh).toLowerCase().indexOf(q)===-1)continue;
+        items.push({k:k,v:v});}
+      if(items.length)cards.push({title:lh||vh,unit:vh,items:items});
+    }
+    var ph='<div class="paygrid">';
+    cards.forEach(function(cd){
+      ph+='<div class="paycard"><h3>'+esc(cd.title)+(cd.unit&&cd.unit!==cd.title?' <span>'+esc(cd.unit)+'</span>':'')+'</h3>';
+      cd.items.forEach(function(it){ph+='<div class="kv"><span class="k">'+hl(it.k,view.q)+'</span><span class="v">'+(it.v?hl(it.v,view.q):'—')+'</span></div>';});
+      ph+='</div>';shown+=cd.items.length;
+    });
+    ph+='</div>';body.innerHTML=ph;
   }else{
-    var hh='<div class="table-wrap"><table><thead><tr>';(rows[0]||[]).forEach(function(c){hh+='<th>'+esc(c||'')+'</th>';});hh+='</tr></thead><tbody>';
-    for(var r2=1;r2<rows.length;r2++){var row2=rows[r2]||[];if(row2.join('').trim()==='')continue;if(q&&row2.join(' ').toLowerCase().indexOf(q)===-1)continue;
-      hh+='<tr>'+row2.map(function(c){if(isUrl(c))return '<td>'+linkify(esc(c))+'</td>';return '<td'+(isNum(c)?' class="num"':'')+'>'+hl(c||'',view.q)+'</td>';}).join('')+'</tr>';shown++;}
+    var hd=rows[0]||[];var vis=[];
+    for(var j=0;j<hd.length;j++){var h0=(hd[j]||'').trim();if(h0==='目次')continue;var any=h0!=='';
+      if(!any){for(var rr=1;rr<rows.length;rr++){if(String((rows[rr]||[])[j]||'').trim()!==''){any=true;break;}}}
+      if(any)vis.push(j);}
+    var hh='<div class="table-wrap"><table><thead><tr>'+vis.map(function(j){return '<th>'+esc(hd[j]||'')+'</th>';}).join('')+'</tr></thead><tbody>';
+    for(var r2=1;r2<rows.length;r2++){var row2=rows[r2]||[];
+      if(vis.map(function(j){return String(row2[j]||'');}).join('').trim()==='')continue;
+      if(q&&vis.map(function(j){return String(row2[j]||'');}).join(' ').toLowerCase().indexOf(q)===-1)continue;
+      hh+='<tr>'+vis.map(function(j){var c=row2[j]||'';var lab=esc(hd[j]||'').replace(/"/g,'&quot;');
+        if(isUrl(c))return '<td data-label="'+lab+'">'+linkify(esc(c))+'</td>';
+        return '<td data-label="'+lab+'"'+(isNum(c)?' class="num"':'')+'>'+hl(c||'',view.q)+'</td>';}).join('')+'</tr>';shown++;}
     hh+='</tbody></table></div>';body.innerHTML=hh;
   }
   if(shown===0)body.innerHTML='<div class="state">'+(view.q?'「'+esc(view.q)+'」に一致する項目はありません':'項目がありません')+'</div>';
